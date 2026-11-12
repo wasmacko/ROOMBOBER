@@ -263,6 +263,34 @@ dependencies:
       registry_url: https://components.espressif.com
       type: service
     version: 1.2.0
+  espressif/lan867x:
+    component_hash: 88bcd9834f0ddd780c1dbed3b9135d03edd00e76dadfd70b91410a524cc5e85a
+    dependencies:
+    - name: espressif/lan86xx_common
+      registry_url: https://components.espressif.com
+      require: private
+      version: '*'
+    - name: idf
+      require: private
+      version: '>=5.3'
+    source:
+      registry_url: https://components.espressif.com
+      type: service
+    targets:
+    - esp32
+    - esp32p4
+    - esp32s31
+    version: 2.1.0
+  espressif/lan86xx_common:
+    component_hash: 1045dc16e9eaa23c8f94ebd012e4ccc9087e85323c39f870b116391f27196914
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=5.2'
+    source:
+      registry_url: https://components.espressif.com
+      type: service
+    version: 1.0.1
   espressif/mdns:
     component_hash: ef0766474b37459f6ad22461e453a8713e780e831a7c993b16919d817988dff6
     dependencies:
@@ -317,5 +345,5 @@ direct_dependencies:
 - espressif/arduino-esp32
 - idf
 manifest_hash: 1959e5ddb9a0f0ee140c7a4e96bce4d948e09b762a56018947d9c2b67b3be16e
-target: esp32s3
+target: esp32
 version: 3.0.0
