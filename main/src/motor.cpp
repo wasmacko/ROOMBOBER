@@ -46,5 +46,17 @@ void Motor::setSpeed(double speedValPercent) {   //speedVal is percentage!
         speedVal = 255 - round(255 * speedValPercent);
     }
     ledcWrite(m_cfg.speedPin, speedVal);
-    delayMicroseconds(125);
+};
+uint8_t Motor::stopped() {
+    if (!m_hasLastValue) {
+        m_lastEncoderValue = encoderValue;
+        m_hasLastValue = 1;
+        return 0;
+    }
+    if (m_lastEncoderValue == encoderValue) {
+        m_hasLastValue = 0;
+        return 1;
+    }
+    m_lastEncoderValue = encoderValue;
+    return 0;
 };

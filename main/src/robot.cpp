@@ -15,6 +15,18 @@ void Robot::rotateRight() {
     motorLeft->forward();
     motorRight->backward();
 };
+void Robot::rotateLeft() {
+    motorLeft->backward();
+    motorRight->forward();
+};
+void Robot::forward() {
+    motorLeft->forward();
+    motorRight->forward();
+};
+void Robot::backward() {
+    motorLeft->backward();
+    motorRight->backward();
+};
 void Robot::speed(double speedValPercent) {
     motorLeft->setSpeed(speedValPercent);
     motorRight->setSpeed(speedValPercent);

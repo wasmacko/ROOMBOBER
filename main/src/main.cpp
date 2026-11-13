@@ -3,7 +3,7 @@
 #include "motor.hpp"
 #include "robot.hpp"
 
-Robot *robot;
+Robot robot;
 MotorConfig motorLeftConfig {
     .speedPin = 4,
     .startPin = 5,
@@ -24,21 +24,20 @@ void uartTask(void *pvParameters) {
 
     while (true) {
         Serial.print("\033[2J\033[H"); //clear console and set cursor at upper left corner
-        Serial.printf("Encoder data: %llu\n", robot->motorLeft->encoderValue);
+        Serial.printf("Encoder data: %llu\n", robot.motorLeft->encoderValue);
         vTaskDelay(pdMS_TO_TICKS(500));
     }
 };
 
 void IRAM_ATTR ISR_ENCODER() {
-    robot->motorLeft->encoderValue++;
+    robot.motorLeft->encoderValue++;
 };
 
 extern "C" void app_main(void)
 {
     initArduino();
-    robot = new Robot();
-    robot->initLeftMotor(motorLeftConfig);
-    robot->initRightMotor(motorRightConfig);
+    robot.initLeftMotor(motorLeftConfig);
+    robot.initRightMotor(motorRightConfig);
 
     xTaskCreatePinnedToCore(
         uartTask,
@@ -49,12 +48,18 @@ extern "C" void app_main(void)
         NULL,
         0
     );
-    robot->speed(0.9);
-    robot->start();
+    robot.speed(0.3);
     attachInterrupt(digitalPinToInterrupt(motorLeftConfig.encoderPin), ISR_ENCODER, RISING);
     while (1) {
-        if (robot->motorLeft->encoderValue > 1115) {
-            robot->stop();
-        }
+        robot.rotateLeft();
+        robot.start();
+        delay(2000);
+        robot.stop();
+        delay(1000);
+        robot.rotateRight();
+        robot.start();
+        delay(2000);
+        robot.stop();
+        delay(1000);
     };
 };
