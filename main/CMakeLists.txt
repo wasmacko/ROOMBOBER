@@ -1,4 +1,5 @@
-idf_component_register(SRCS "src/main.cpp" "src/motor.cpp" "src/robot.cpp"
-                    INCLUDE_DIRS "include")
+idf_component_register(SRCS "src/main.cpp" "src/motor.cpp" "src/robot.cpp" "src/webserver.cpp" "src/wifimanager.cpp"
+                    INCLUDE_DIRS "include"
+                    REQUIRES esp_wifi esp_http_server nvs_flash esp_netif)
 # Wyłączenie -Werror dla całego projektu lub komponentów
 idf_build_set_property(COMPILE_OPTIONS "-Wno-error" APPEND)

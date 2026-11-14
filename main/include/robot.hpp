@@ -19,4 +19,5 @@ void backward();
 void speed(double speedValPercent);
 void start();
 void stop();
+uint8_t stopped();
 };

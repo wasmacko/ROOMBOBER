@@ -26,9 +26,20 @@ void Motor::start() {
     m_on = 1;
     digitalWrite(m_cfg.startPin, LOW);
 }
-void Motor::stop() {
-    m_on = 0;
+uint8_t Motor::stop() {
     digitalWrite(m_cfg.startPin, HIGH);
+    if (!m_hasLastValue) {
+        m_lastEncoderValue = encoderValue;
+        m_hasLastValue = 1;
+        return 0;
+    }
+    if (m_lastEncoderValue == encoderValue) {
+        m_hasLastValue = 0;
+        m_on = 0;
+        return 1;
+    }
+    m_lastEncoderValue = encoderValue;
+    return 0;
 }
 uint8_t Motor::isOn() const {
     if (m_on) {
@@ -46,17 +57,4 @@ void Motor::setSpeed(double speedValPercent) {   //speedVal is percentage!
         speedVal = 255 - round(255 * speedValPercent);
     }
     ledcWrite(m_cfg.speedPin, speedVal);
-};
-uint8_t Motor::stopped() {
-    if (!m_hasLastValue) {
-        m_lastEncoderValue = encoderValue;
-        m_hasLastValue = 1;
-        return 0;
-    }
-    if (m_lastEncoderValue == encoderValue) {
-        m_hasLastValue = 0;
-        return 1;
-    }
-    m_lastEncoderValue = encoderValue;
-    return 0;
 };

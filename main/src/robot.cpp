@@ -1,4 +1,6 @@
 #include "robot.hpp"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 Robot::Robot() {};
 Robot::~Robot() {
@@ -36,6 +38,7 @@ void Robot::start() {
     motorRight->start();
 };
 void Robot::stop() {
-    motorLeft->stop();
-    motorRight->stop();
+    while(motorLeft->stop() || motorRight->stop()) {
+        vTaskDelay(pdMS_TO_TICKS(10));
+    };
 }

@@ -2,6 +2,11 @@
 #include <Arduino.h>
 #include "motor.hpp"
 #include "robot.hpp"
+#include "webserver.hpp"
+#include "wifimanager.hpp"
+
+#define WIFI_SSID      "NETIASPOT-H2rM"
+#define WIFI_PASS      "pCZk6DAq4VxK"
 
 Robot robot;
 MotorConfig motorLeftConfig {
@@ -17,17 +22,7 @@ MotorConfig motorRightConfig {      //those are example pins
     .encoderPin = 18,
 };
 
-void uartTask(void *pvParameters) {
-    Serial.begin(115200);
-    
-    delay(1000); 
-
-    while (true) {
-        Serial.print("\033[2J\033[H"); //clear console and set cursor at upper left corner
-        Serial.printf("Encoder data: %llu\n", robot.motorLeft->encoderValue);
-        vTaskDelay(pdMS_TO_TICKS(500));
-    }
-};
+volatile uint8_t autoMode = 1;
 
 void IRAM_ATTR ISR_ENCODER() {
     robot.motorLeft->encoderValue++;
@@ -35,31 +30,28 @@ void IRAM_ATTR ISR_ENCODER() {
 
 extern "C" void app_main(void)
 {
+    WifiManager::connect(WIFI_SSID, WIFI_PASS);
+    WebServer::start();
+
     initArduino();
     robot.initLeftMotor(motorLeftConfig);
     robot.initRightMotor(motorRightConfig);
 
-    xTaskCreatePinnedToCore(
-        uartTask,
-        "USB_Task",
-        4096,
-        NULL,
-        1,
-        NULL,
-        0
-    );
     robot.speed(0.3);
     attachInterrupt(digitalPinToInterrupt(motorLeftConfig.encoderPin), ISR_ENCODER, RISING);
-    while (1) {
-        robot.rotateLeft();
-        robot.start();
-        delay(2000);
-        robot.stop();
-        delay(1000);
-        robot.rotateRight();
-        robot.start();
-        delay(2000);
-        robot.stop();
-        delay(1000);
-    };
+    while(1) {
+        vTaskDelay(pdMS_TO_TICKS(10));
+        while (autoMode) {
+            robot.rotateLeft();
+            robot.start();
+            delay(2000);
+            robot.stop();
+            delay(1000);
+            robot.rotateRight();
+            robot.start();
+            delay(2000);
+            robot.stop();
+            delay(1000);
+        }
+    }
 };
