@@ -1,4 +1,4 @@
-idf_component_register(SRCS "src/main.cpp" "src/motor.cpp" "src/robot.cpp" "src/webserver.cpp" "src/wifimanager.cpp"
+idf_component_register(SRCS "src/main.cpp" "src/motor.cpp" "src/robot.cpp" "src/webserver.cpp" "src/wifimanager.cpp" "src/VL53L0X.cpp" "src/tof.cpp"
                     INCLUDE_DIRS "include"
                     REQUIRES esp_wifi esp_http_server nvs_flash esp_netif)
 # Wyłączenie -Werror dla całego projektu lub komponentów

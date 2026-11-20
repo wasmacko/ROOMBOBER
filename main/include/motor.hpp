@@ -5,7 +5,7 @@ struct MotorConfig {
     uint8_t speedPin;
     uint8_t startPin;
     uint8_t dirPin;
-    uint8_t encoderPin; 
+    uint8_t encoderPin;
 };
 
 class Motor {
