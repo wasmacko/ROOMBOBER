@@ -6,6 +6,11 @@ Robot::Robot() {};
 Robot::~Robot() {
     delete motorLeft;
     delete motorRight;
+    delete tof;
+};
+bool Robot::initToF(const ToFBusConfig &busCfg, const ToFSensorConfig sensorCfgs[ToFManager::NUM_SENSORS]) {
+    tof = new ToFManager(busCfg, sensorCfgs);
+    return tof->init();
 };
 void Robot::initLeftMotor(const MotorConfig &config) {
     motorLeft = new Motor(config);
