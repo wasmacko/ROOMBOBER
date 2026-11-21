@@ -6,22 +6,22 @@
 #include "wifimanager.hpp"
 #include "tof.hpp"
 
-#define WIFI_SSID "BUBA3"
-#define WIFI_PASS "KN14738x"
+#define WIFI_SSID "NETIASPOT-H2rM"
+#define WIFI_PASS "pCZk6DAq4VxK"
 
 Robot robot;
 
 MotorConfig motorLeftConfig {
-    .speedPin = 4,
-    .startPin = 5,
-    .dirPin = 6,
+    .speedPin = 6,
+    .startPin = 4,
+    .dirPin = 5,
     .encoderPin = 7,
 };
 
 MotorConfig motorRightConfig {
-    .speedPin = 15,
-    .startPin = 16,
-    .dirPin = 17,
+    .speedPin = 17,
+    .startPin = 15,
+    .dirPin = 16,
     .encoderPin = 18,
 };
 
@@ -76,7 +76,8 @@ extern "C" void app_main(void)
     WifiManager::connect(WIFI_SSID, WIFI_PASS);
     WebServer::start();
 
-    robot.speed(0.3);
+    robot.speed = 0.3;
+    robot.uploadSpeed();
 
     while(1) {
         vTaskDelay(pdMS_TO_TICKS(10));

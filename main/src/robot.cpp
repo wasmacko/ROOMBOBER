@@ -18,25 +18,32 @@ void Robot::initLeftMotor(const MotorConfig &config) {
 void Robot::initRightMotor(const MotorConfig &config) {
     motorRight = new Motor(config);
 };
+
+//strange directions of morots because in case motors are mirrored.
 void Robot::rotateRight() {
     motorLeft->forward();
-    motorRight->backward();
+    motorRight->forward();
 };
 void Robot::rotateLeft() {
     motorLeft->backward();
-    motorRight->forward();
+    motorRight->backward();
 };
 void Robot::forward() {
     motorLeft->forward();
-    motorRight->forward();
+    motorRight->backward();
 };
 void Robot::backward() {
     motorLeft->backward();
-    motorRight->backward();
+    motorRight->forward();
 };
-void Robot::speed(double speedValPercent) {
-    motorLeft->setSpeed(speedValPercent);
-    motorRight->setSpeed(speedValPercent);
+void Robot::uploadSpeed() {
+    if (speed > 1) {
+        speed = 1;
+    } else if (speed < 0) {
+        speed = 0;
+    }
+    motorLeft->setSpeed(speed);
+    motorRight->setSpeed(speed);
 };
 void Robot::start() {
     motorLeft->start();

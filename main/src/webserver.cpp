@@ -34,11 +34,23 @@ input[type=number]{width:70px;padding:5px;background:#333;color:#fff;border:1px 
 
 <div class="panel">
     <div><button id='autoBtn' class='btn-auto' onclick='toggleAuto()'>Tryb Auto: Ładowanie...</button></div>
-    <button onclick="cmd('fwd')">Przód</button><br>
-    <button onclick="cmd('left')">Lewo</button>
-    <button onclick="cmd('stop')" style='background:#d50000;'>STOP</button>
-    <button onclick="cmd('right')">Prawo</button><br>
-    <button onclick="cmd('back')">Tył</button>
+
+    <div class="drive-pad">
+        <button onclick="cmd('fwd')">Przód</button><br>
+        <button onclick="cmd('left')">Lewo</button>
+        <button onclick="cmd('stop')" style='background:#d50000;'>STOP</button>
+        <button onclick="cmd('right')">Prawo</button><br>
+        <button onclick="cmd('back')">Tył</button>
+    </div>
+
+    <div class="speed-bar" style="margin-top:14px;padding-top:12px;border-top:1px solid #333;">
+        <button onclick="cmd('speeddown')">Wolniej</button>
+        <span style="display:inline-block;min-width:120px;margin:0 8px;font-weight:bold;">
+            Prędkość: <span id="spd" style="color:#00e676;">--</span>
+        </span>
+        <button onclick="cmd('speedup')">Szybciej</button>
+    </div>
+
     <div id='st'>Gotowy</div>
 </div>
 
@@ -111,6 +123,7 @@ window.onload = function() {
             }
             document.getElementById('encL').innerText = d.enc[0];
             document.getElementById('encR').innerText = d.enc[1];
+            document.getElementById('spd').innerText = d.speed;
         }).catch(()=>{});
     }, 200);
 };
@@ -172,11 +185,13 @@ static esp_err_t api_tof_get_handler(httpd_req_t *req) {
 
     snprintf(buf, sizeof(buf),
         "{\"dist\":[%u,%u,%u],\"ok\":[%u,%u,%u],\"enc\":[%llu,%llu],"
-        "\"cfg\":[{\"x\":%.1f,\"y\":%.1f,\"a\":%.1f},{\"x\":%.1f,\"y\":%.1f,\"a\":%.1f},{\"x\":%.1f,\"y\":%.1f,\"a\":%.1f}]}",
+        "\"cfg\":[{\"x\":%.1f,\"y\":%.1f,\"a\":%.1f},{\"x\":%.1f,\"y\":%.1f,\"a\":%.1f},{\"x\":%.1f,\"y\":%.1f,\"a\":%.1f}],"
+        "\"speed\":%.2f}",
         d[0], d[1], d[2], ok[0], ok[1], ok[2], encL, encR,
         c[0].offsetX_mm, c[0].offsetY_mm, c[0].angle_deg,
         c[1].offsetX_mm, c[1].offsetY_mm, c[1].angle_deg,
-        c[2].offsetX_mm, c[2].offsetY_mm, c[2].angle_deg);
+        c[2].offsetX_mm, c[2].offsetY_mm, c[2].angle_deg,
+        robot.speed);
 
     httpd_resp_set_type(req, "application/json");
     return httpd_resp_send(req, buf, HTTPD_RESP_USE_STRLEN);
@@ -218,6 +233,14 @@ static esp_err_t cmd_get_handler(httpd_req_t *req) {
                 else if (strcmp(dir, "left") == 0) { robot.rotateLeft(); robot.start(); }
                 else if (strcmp(dir, "right") == 0) { robot.rotateRight(); robot.start(); }
                 else if (strcmp(dir, "stop") == 0) { robot.stop(); }
+                else if (strcmp(dir, "speedup") == 0) { 
+                    robot.speed += 0.1;
+                    robot.uploadSpeed(); 
+                }
+                else if (strcmp(dir, "speeddown") == 0) { 
+                    robot.speed -= 0.1;
+                    robot.uploadSpeed(); 
+                }
             }
 
             httpd_resp_send(req, dir, HTTPD_RESP_USE_STRLEN);

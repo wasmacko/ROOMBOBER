@@ -7,6 +7,7 @@ public:
     Motor* motorLeft = nullptr;
     Motor* motorRight = nullptr;
     ToFManager* tof = nullptr;
+    double speed = 0.0;
 
     Robot();
     ~Robot();
@@ -20,7 +21,7 @@ public:
     void rotateLeft();
     void forward();
     void backward();
-    void speed(double speedValPercent);
+    void uploadSpeed();
     void start();
     void stop();
     uint8_t stopped();
