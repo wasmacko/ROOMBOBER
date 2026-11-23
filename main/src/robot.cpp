@@ -18,6 +18,9 @@ void Robot::initLeftMotor(const MotorConfig &config) {
 void Robot::initRightMotor(const MotorConfig &config) {
     motorRight = new Motor(config);
 };
+void Robot::initBumper(const BumperConfig &config) {
+    bumper = new Bumper(config);
+};
 
 //strange directions of morots because in case motors are mirrored.
 void Robot::rotateRight() {

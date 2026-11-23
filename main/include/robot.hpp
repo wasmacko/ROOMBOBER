@@ -1,12 +1,14 @@
 #pragma once
 #include "motor.hpp"
 #include "tof.hpp"
+#include "bumper.hpp"
 
 class Robot {
 public:
     Motor* motorLeft = nullptr;
     Motor* motorRight = nullptr;
     ToFManager* tof = nullptr;
+    Bumper* bumper = nullptr;
     double speed = 0.0;
 
     Robot();
@@ -15,6 +17,7 @@ public:
     void initLeftMotor(const MotorConfig &config);
     void initRightMotor(const MotorConfig &config);
     bool initToF(const ToFBusConfig &busCfg, const ToFSensorConfig sensorCfgs[ToFManager::NUM_SENSORS]);
+    void initBumper(const BumperConfig &config);
 
     // MOVEMENT:
     void rotateRight();

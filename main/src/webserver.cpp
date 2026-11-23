@@ -180,8 +180,8 @@ static esp_err_t api_tof_get_handler(httpd_req_t *req) {
             c[i] = robot.tof->getSensorConfig(i);
         }
     }
-    uint64_t encL = robot.motorLeft ? robot.motorLeft->encoderValue : 0;
-    uint64_t encR = robot.motorRight ? robot.motorRight->encoderValue : 0;
+    uint64_t encL = robot.motorLeft ? robot.motorLeft->getEncoderValue() : 0;
+    uint64_t encR = robot.motorRight ? robot.motorRight->getEncoderValue() : 0;
 
     snprintf(buf, sizeof(buf),
         "{\"dist\":[%u,%u,%u],\"ok\":[%u,%u,%u],\"enc\":[%llu,%llu],"
