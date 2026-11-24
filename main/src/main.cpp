@@ -14,17 +14,17 @@
 Robot robot;
 
 MotorConfig motorLeftConfig {
-    .speedPin = 6,
-    .startPin = 4,
-    .dirPin = 5,
-    .encoderPin = GPIO_NUM_7,
+    .speedPin = 42,
+    .startPin = 1,
+    .dirPin = 2,
+    .encoderPin = GPIO_NUM_41,
 };
 
 MotorConfig motorRightConfig {
-    .speedPin = 17,
-    .startPin = 15,
-    .dirPin = 16,
-    .encoderPin = GPIO_NUM_18,
+    .speedPin = 5,
+    .startPin = 7,
+    .dirPin = 6,
+    .encoderPin = GPIO_NUM_4,
 };
 
 ToFBusConfig tofBusConfig {
@@ -35,8 +35,8 @@ ToFBusConfig tofBusConfig {
 };
 
 BumperConfig bumperConfig {
-    .leftSwitchPin = 99,    //those pins are placeholders
-    .rightSwitchPin = 99,
+    .leftSwitchPin = 40,   
+    .rightSwitchPin = 15,
 };
 
 // VL53L0X Sensors config (XSHUT pin, unique i2c address, X[mm], Y[mm], Angle[deg])
@@ -72,16 +72,13 @@ extern "C" void app_main(void)
     // i2c reading on core 1 for sensors
     xTaskCreatePinnedToCore(tofUpdateTask, "tof_task", 4096, nullptr, 5, nullptr, 1);
 
-    //WifiManager::connect(WIFI_SSID, WIFI_PASS);
-    //WebServer::start();
+    WifiManager::connect(WIFI_SSID, WIFI_PASS);
+    WebServer::start();
 
     robot.speed = 0.7;
     robot.uploadSpeed();
-    robot.start();
+
     while(1) {
         vTaskDelay(pdMS_TO_TICKS(10));
-        if (robot.motorLeft->getEncoderValue() > 1200*2) {
-            robot.stop();
-        }
     }
 }

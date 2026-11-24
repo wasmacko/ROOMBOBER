@@ -12,7 +12,7 @@ pcnt_unit_handle_t Motor::init_single_encoder(gpio_num_t pin) {
     ESP_ERROR_CHECK(pcnt_new_unit(&unit_config, &unit));
 
     pcnt_glitch_filter_config_t filter_config = {
-        .max_glitch_ns = 1000,
+        .max_glitch_ns = 5000,
     };
     ESP_ERROR_CHECK(pcnt_unit_set_glitch_filter(unit, &filter_config));
 
@@ -24,7 +24,7 @@ pcnt_unit_handle_t Motor::init_single_encoder(gpio_num_t pin) {
     ESP_ERROR_CHECK(pcnt_new_channel(unit, &chan_config, &chan));
     gpio_set_pull_mode(pin, GPIO_PULLUP_ONLY);
 
-    ESP_ERROR_CHECK(pcnt_channel_set_edge_action(chan, PCNT_CHANNEL_EDGE_ACTION_INCREASE, PCNT_CHANNEL_EDGE_ACTION_HOLD));
+    ESP_ERROR_CHECK(pcnt_channel_set_edge_action(chan, PCNT_CHANNEL_EDGE_ACTION_HOLD, PCNT_CHANNEL_EDGE_ACTION_INCREASE));
 
     ESP_ERROR_CHECK(pcnt_unit_add_watch_point(unit, 30000));
 
@@ -65,21 +65,8 @@ void Motor::start() {
     m_on = 1;
     digitalWrite(m_cfg.startPin, LOW);
 }
-uint8_t Motor::stop() {
+void Motor::stop() {
     digitalWrite(m_cfg.startPin, HIGH);
-    auto currentEncoderValue = getEncoderValue();
-    if (!m_hasLastValue) {
-        m_lastEncoderValue = currentEncoderValue;
-        m_hasLastValue = 1;
-        return 0;
-    }
-    if (m_lastEncoderValue == currentEncoderValue) {
-        m_hasLastValue = 0;
-        m_on = 0;
-        return 1;
-    }
-    m_lastEncoderValue = currentEncoderValue;
-    return 0;
 }
 uint8_t Motor::isOn() const {
     if (m_on) {

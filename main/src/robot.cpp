@@ -53,7 +53,6 @@ void Robot::start() {
     motorRight->start();
 };
 void Robot::stop() {
-    while(motorLeft->stop() || motorRight->stop()) {
-        vTaskDelay(pdMS_TO_TICKS(10));
-    };
+    motorLeft->stop();
+    motorRight->stop();
 }

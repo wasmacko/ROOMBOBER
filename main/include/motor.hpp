@@ -32,7 +32,7 @@ void forward();
 void backward();
 uint8_t direction() const;
 void start();
-uint8_t stop();
+void stop();
 uint8_t isOn() const;
 int getEncoderValue();
 void setSpeed(double speedValPercent);
