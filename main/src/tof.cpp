@@ -12,23 +12,26 @@ ToFManager::ToFManager(const ToFBusConfig &busCfg, const ToFSensorConfig sensorC
     }
 }
 
+uint16_t ToFManager::median3(uint16_t a, uint16_t b, uint16_t c) {
+    if ((a <= b && b <= c) || (c <= b && b <= a)) return b;
+    if ((b <= a && a <= c) || (c <= a && a <= b)) return a;
+    return c;
+}
+
 bool ToFManager::init() {
-    // 1. Put all sensors into hardware standby (XSHUT LOW)
     for (int i = 0; i < NUM_SENSORS; i++) {
         pinMode(m_sensorCfg[i].xshutPin, OUTPUT);
         digitalWrite(m_sensorCfg[i].xshutPin, LOW);
     }
     delay(20);
 
-    // 2. Initialize I2C Bus
     Wire.begin(m_busCfg.sdaPin, m_busCfg.sclPin, m_busCfg.i2cFreqHz);
     delay(10);
 
-    // 3. Wake each sensor one-by-one and assign its unique I2C address
     bool allOk = true;
     for (int i = 0; i < NUM_SENSORS; i++) {
         digitalWrite(m_sensorCfg[i].xshutPin, HIGH);
-        delay(20); // Wait for VL53L0X boot
+        delay(20);
 
         m_sensors[i].setTimeout(200);
         if (!m_sensors[i].init()) {
@@ -52,7 +55,14 @@ void ToFManager::update() {
 
         uint16_t dist = m_sensors[i].readRangeContinuousMillimeters();
         if (!m_sensors[i].timeoutOccurred()) {
-            m_distances_mm[i] = dist;
+            if (!m_histInit[i]) {
+                m_hist[i][0] = m_hist[i][1] = m_hist[i][2] = dist;
+                m_histInit[i] = true;
+            } else {
+                m_hist[i][m_histIdx[i]] = dist;
+                m_histIdx[i] = (m_histIdx[i] + 1) % 3;
+            }
+            m_distances_mm[i] = median3(m_hist[i][0], m_hist[i][1], m_hist[i][2]);
         }
     }
 }

@@ -13,6 +13,7 @@ public:
 
     Robot();
     ~Robot();
+
     // INITIALIZATION:
     void initLeftMotor(const MotorConfig &config);
     void initRightMotor(const MotorConfig &config);
@@ -24,6 +25,7 @@ public:
     void rotateLeft();
     void forward();
     void backward();
+    void drive(double leftSpeed, double rightSpeed); // [-1.0 .. 1.0], + = przód robota, - = tył robota
     void uploadSpeed();
     void start();
     void stop();

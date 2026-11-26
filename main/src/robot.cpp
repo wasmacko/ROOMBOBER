@@ -1,58 +1,108 @@
 #include "robot.hpp"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
+#include <cmath>
 
-Robot::Robot() {};
+Robot::Robot() {}
+
 Robot::~Robot() {
     delete motorLeft;
     delete motorRight;
     delete tof;
-};
+    delete bumper;
+}
+
 bool Robot::initToF(const ToFBusConfig &busCfg, const ToFSensorConfig sensorCfgs[ToFManager::NUM_SENSORS]) {
     tof = new ToFManager(busCfg, sensorCfgs);
     return tof->init();
-};
+}
+
 void Robot::initLeftMotor(const MotorConfig &config) {
     motorLeft = new Motor(config);
-};
+}
+
 void Robot::initRightMotor(const MotorConfig &config) {
     motorRight = new Motor(config);
-};
+}
+
 void Robot::initBumper(const BumperConfig &config) {
     bumper = new Bumper(config);
-};
+}
 
-//strange directions of morots because in case motors are mirrored.
+// mirroring right motor
 void Robot::rotateRight() {
-    motorLeft->forward();
-    motorRight->forward();
-};
+    if (motorLeft) motorLeft->forward();
+    if (motorRight) motorRight->forward();
+}
+
 void Robot::rotateLeft() {
-    motorLeft->backward();
-    motorRight->backward();
-};
+    if (motorLeft) motorLeft->backward();
+    if (motorRight) motorRight->backward();
+}
+
 void Robot::forward() {
-    motorLeft->forward();
-    motorRight->backward();
-};
+    if (motorLeft) motorLeft->forward();
+    if (motorRight) motorRight->backward();
+}
+
 void Robot::backward() {
-    motorLeft->backward();
-    motorRight->forward();
-};
-void Robot::uploadSpeed() {
-    if (speed > 1) {
-        speed = 1;
-    } else if (speed < 0) {
-        speed = 0;
+    if (motorLeft) motorLeft->backward();
+    if (motorRight) motorRight->forward();
+}
+
+void Robot::drive(double leftSpeed, double rightSpeed) {
+    if (leftSpeed > 1.0) leftSpeed = 1.0;
+    if (leftSpeed < -1.0) leftSpeed = -1.0;
+    if (rightSpeed > 1.0) rightSpeed = 1.0;
+    if (rightSpeed < -1.0) rightSpeed = -1.0;
+
+    if (motorLeft) {
+        if (leftSpeed > 0.02) {
+            motorLeft->forward();
+            motorLeft->setSpeed(leftSpeed);
+            motorLeft->start();
+        } else if (leftSpeed < -0.02) {
+            motorLeft->backward();
+            motorLeft->setSpeed(-leftSpeed);
+            motorLeft->start();
+        } else {
+            motorLeft->stop();
+        }
     }
-    motorLeft->setSpeed(speed);
-    motorRight->setSpeed(speed);
-};
+
+    // !mirrored right motor
+    if (motorRight) {
+        if (rightSpeed > 0.02) {
+            motorRight->backward();
+            motorRight->setSpeed(rightSpeed);
+            motorRight->start();
+        } else if (rightSpeed < -0.02) {
+            motorRight->forward();
+            motorRight->setSpeed(-rightSpeed);
+            motorRight->start();
+        } else {
+            motorRight->stop();
+        }
+    }
+}
+
+void Robot::uploadSpeed() {
+    if (speed > 1.0) speed = 1.0;
+    else if (speed < 0.0) speed = 0.0;
+    if (motorLeft) motorLeft->setSpeed(speed);
+    if (motorRight) motorRight->setSpeed(speed);
+}
+
 void Robot::start() {
-    motorLeft->start();
-    motorRight->start();
-};
+    if (motorLeft) motorLeft->start();
+    if (motorRight) motorRight->start();
+}
+
 void Robot::stop() {
-    motorLeft->stop();
-    motorRight->stop();
+    if (motorLeft) motorLeft->stop();
+    if (motorRight) motorRight->stop();
+}
+
+uint8_t Robot::stopped() {
+    bool lOff = !motorLeft || !motorLeft->isOn();
+    bool rOff = !motorRight || !motorRight->isOn();
+    return (lOff && rOff) ? 1 : 0;
 }

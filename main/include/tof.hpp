@@ -28,6 +28,13 @@ private:
     uint16_t m_distances_mm[NUM_SENSORS] = {0, 0, 0};
     uint8_t m_sensorOk[NUM_SENSORS] = {0, 0, 0};
 
+    // 3-próbkowy filtr medianowy eliminujący pojedyncze zakłócenia
+    uint16_t m_hist[NUM_SENSORS][3] = {{0}};
+    uint8_t m_histIdx[NUM_SENSORS] = {0, 0, 0};
+    bool m_histInit[NUM_SENSORS] = {false, false, false};
+
+    static uint16_t median3(uint16_t a, uint16_t b, uint16_t c);
+
 public:
     ToFManager(const ToFBusConfig &busCfg, const ToFSensorConfig sensorCfgs[NUM_SENSORS]);
 
@@ -39,7 +46,6 @@ public:
     uint16_t getMaxValidDistMM() const { return m_busCfg.maxValidDist_mm; }
     void setMaxValidDistMM(uint16_t maxDist) { m_busCfg.maxValidDist_mm = maxDist; }
 
-    // Getter & Setter for runtime configuration (via code or Web UI)
     ToFSensorConfig getSensorConfig(int idx) const;
     void setSensorPosition(int idx, float x_mm, float y_mm, float angle_deg);
 };

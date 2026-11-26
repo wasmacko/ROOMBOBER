@@ -6,12 +6,17 @@
 #include "wifimanager.hpp"
 #include "tof.hpp"
 #include "bumper.hpp"
-#include "driver/pulse_cnt.h"
+#include "collision.hpp"
+#include "controller.hpp"
+#include "odometry.hpp"
 
-#define WIFI_SSID "NETIASPOT-H2rM"
-#define WIFI_PASS "pCZk6DAq4VxK"
+#define WIFI_SSID "LAPTOP-QP4D10V7 6758"
+#define WIFI_PASS "KN14738x"
 
 Robot robot;
+CollisionManager* collision = nullptr;
+RobotController* controller = nullptr;
+Odometry* odometry = nullptr;
 
 MotorConfig motorLeftConfig {
     .speedPin = 42,
@@ -35,28 +40,34 @@ ToFBusConfig tofBusConfig {
 };
 
 BumperConfig bumperConfig {
-    .leftSwitchPin = 40,   
+    .leftSwitchPin = 40,
     .rightSwitchPin = 15,
 };
 
-// VL53L0X Sensors config (XSHUT pin, unique i2c address, X[mm], Y[mm], Angle[deg])
 ToFSensorConfig tofSensorsConfig[ToFManager::NUM_SENSORS] = {
     { .xshutPin = 10, .i2cAddress = 0x30, .offsetX_mm = 80.0f,  .offsetY_mm = 60.0f,  .angle_deg = 45.0f  }, // Left
     { .xshutPin = 11, .i2cAddress = 0x31, .offsetX_mm = 100.0f, .offsetY_mm = 0.0f,   .angle_deg = 0.0f   }, // Center
     { .xshutPin = 12, .i2cAddress = 0x32, .offsetX_mm = 80.0f,  .offsetY_mm = -60.0f, .angle_deg = -45.0f }, // Right
 };
 
-volatile uint8_t autoMode = 1;
-volatile uint8_t commandNum = 0;
-volatile uint8_t commandEnd = 0;
+// Domyślna konfiguracja odometrii lub przez web
+OdometryConfig odomConfig {
+    .wheelDiameter_mm = 70.0f,
+    .wheelBase_mm     = 230.0f,
+    .ticksPerRevLeft  = 600.0f,
+    .ticksPerRevRight = 600.0f,
+    .invertLeft       = false,
+    .invertRight      = true,
+};
 
-// FreeRTOS background read&update task
+volatile uint8_t autoMode = 0; // Startujemy bezpiecznie w trybie ręcznym żeby nie uciekał
+
 void tofUpdateTask(void* pvParameters) {
     while (1) {
         if (robot.tof) {
             robot.tof->update();
         }
-        vTaskDelay(pdMS_TO_TICKS(50)); // 20Hz update rate (enough?)
+        vTaskDelay(pdMS_TO_TICKS(50)); // 20 Hz
     }
 }
 
@@ -69,16 +80,22 @@ extern "C" void app_main(void)
     robot.initToF(tofBusConfig, tofSensorsConfig);
     robot.initBumper(bumperConfig);
 
-    // i2c reading on core 1 for sensors
+    odometry   = new Odometry(robot.motorLeft, robot.motorRight, odomConfig);
+    collision  = new CollisionManager(robot.bumper, robot.tof);
+    controller = new RobotController(&robot, collision);
+
     xTaskCreatePinnedToCore(tofUpdateTask, "tof_task", 4096, nullptr, 5, nullptr, 1);
 
     WifiManager::connect(WIFI_SSID, WIFI_PASS);
     WebServer::start();
 
-    robot.speed = 0.7;
+    robot.speed = 0.5;
     robot.uploadSpeed();
 
-    while(1) {
+    // Pętla główna 100 Hz: Warstwa 2 (Odometria) + Warstwa 1 (Kolizje i ruch)
+    while (1) {
+        if (odometry)   odometry->update();
+        if (controller) controller->update();
         vTaskDelay(pdMS_TO_TICKS(10));
     }
 }

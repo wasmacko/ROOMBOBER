@@ -2,6 +2,8 @@
 #include <stdint.h>
 #include "driver/pulse_cnt.h"
 #include "driver/gpio.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 
 struct MotorConfig {
     uint8_t speedPin;
@@ -12,28 +14,32 @@ struct MotorConfig {
 
 class Motor {
 private:
-MotorConfig m_cfg;
+    MotorConfig m_cfg;
+    uint8_t m_direction = 0; // 0 = forward, 1 = backward
+    uint8_t m_on = 0;        // 0 = off, 1 = on
+    pcnt_unit_handle_t m_encoder = nullptr;
+    SemaphoreHandle_t m_mutex = nullptr;
 
-uint8_t m_direction = 0; //0 means forward, 1 backward
-uint8_t m_on = 0;   //0 off, 1 on
-uint64_t m_lastEncoderValue;
-uint8_t m_hasLastValue = 0;
+    int m_lastRawEncoder = 0;
+    int64_t m_signedEncoder = 0;
 
-pcnt_unit_handle_t m_encoder;
-int m_encoderValue;
-
-pcnt_unit_handle_t init_single_encoder(gpio_num_t pin);
+    pcnt_unit_handle_t init_single_encoder(gpio_num_t pin);
+    void syncEncoderLocked();
 
 public:
-Motor(const MotorConfig &config);
-~Motor();
+    Motor(const MotorConfig &config);
+    ~Motor();
 
-void forward();
-void backward();
-uint8_t direction() const;
-void start();
-void stop();
-uint8_t isOn() const;
-int getEncoderValue();
-void setSpeed(double speedValPercent);
+    void forward();
+    void backward();
+    uint8_t direction() const;
+
+    void start();
+    void stop();
+    uint8_t isOn() const;
+
+    int getEncoderValue();            // impulses with sign +-
+    int64_t getSignedEncoderValue();  // counter 64bit
+    void resetEncoder();              // reset impules counter
+    void setSpeed(double speedValPercent);
 };
