@@ -106,3 +106,13 @@ uint8_t Robot::stopped() {
     bool rOff = !motorRight || !motorRight->isOn();
     return (lOff && rOff) ? 1 : 0;
 }
+
+void Robot::turnLeft() {
+    if (motorLeft) motorLeft->stop();
+    if (motorRight) motorRight->backward();
+}
+
+void Robot::turnRight() {
+    if (motorLeft) motorLeft->forward();
+    if (motorRight) motorRight->stop();
+}

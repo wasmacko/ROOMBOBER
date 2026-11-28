@@ -40,7 +40,7 @@ public:
     uint32_t turnDuration_ms    = 450;
 
 private:
-    void driveAutoSmooth();
+    void driveAuto();
     void decideTurnDirection();
 
     Robot* m_robot;
@@ -51,4 +51,6 @@ private:
     CollisionSide m_lastHitSide = CollisionSide::NONE;
     bool m_turnRightNext = true;
     bool m_manualColLatched = false;
+    int64_t m_valueBuffer;  //buffer for data 
+    uint8_t m_makingAction = 0; //0-no action, 1-turn left, 2-turn right,3-rotate left, 4-rotate right, 5-backward to left, 6-backward to right
 };

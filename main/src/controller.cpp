@@ -1,6 +1,7 @@
 #include "controller.hpp"
 #include <cstdio>
 #include <cmath>
+#include <algorithm>
 
 RobotController::RobotController(Robot* robotPtr, CollisionManager* collisionPtr)
     : m_robot(robotPtr), m_collision(collisionPtr) {}
@@ -28,13 +29,13 @@ const char* RobotController::getStrategyName() const {
 }
 
 void RobotController::decideTurnDirection() {
-    uint16_t dL = m_collision->getActiveToFDistMM(0);
-    uint16_t dR = m_collision->getActiveToFDistMM(2);
+    uint16_t dLeft = m_collision->getActiveToFDistMM(0);
+    uint16_t dRight = m_collision->getActiveToFDistMM(2);
 
     if (strategy == AvoidStrategy::SMART_OPEN_SPACE || strategy == AvoidStrategy::SMOOTH_ARC) {
         // choosing side with more space
-        if (dL != dR) {
-            m_turnRightNext = (dR > dL);
+        if (dLeft != dRight) {
+            m_turnRightNext = (dRight > dLeft);
             return;
         }
     }
@@ -42,61 +43,144 @@ void RobotController::decideTurnDirection() {
     m_turnRightNext = (m_lastHitSide == CollisionSide::LEFT);
 }
 
-void RobotController::driveAutoSmooth() {
-    uint16_t dL = m_collision->getActiveToFDistMM(0);
-    uint16_t dC = m_collision->getActiveToFDistMM(1);
-    uint16_t dR = m_collision->getActiveToFDistMM(2);
+void RobotController::driveAuto() {
+    uint16_t dLeft = m_collision->getActiveToFDistMM(0);
+    uint16_t dCenter = m_collision->getActiveToFDistMM(1);
+    uint16_t dRight = m_collision->getActiveToFDistMM(2);
+    uint8_t dBumper = m_robot->bumper->hit();
 
     uint16_t slowDist = m_collision->config.slowDownDist_mm;
     uint16_t hardDist = m_collision->config.hardStopDist_mm;
+
+    int64_t actualLeftEncoderValue = m_robot->motorLeft->getSignedEncoderValue();
+    int64_t actualRightEncoderValue = m_robot->motorLeft->getSignedEncoderValue();
     if (slowDist <= hardDist + 20) slowDist = hardDist + 20;
 
-    // linear slow down
-    uint16_t minD = dC;
-    if (dL < minD) minD = dL;
-    if (dR < minD) minD = dR;
+    switch(m_makingAction){
+        case 1: //turn left
+        if(actualRightEncoderValue-m_valueBuffer > 200){
+            m_robot->forward();
+            if(actualRightEncoderValue-m_valueBuffer > 600){
+                m_makingAction = 0;
+            }
+        }
+        return;
+        
+        case 2: //turn right
+        if(actualLeftEncoderValue-m_valueBuffer > 200){
+            m_robot->forward();
+            if(actualLeftEncoderValue-m_valueBuffer > 600){
+                m_makingAction = 0;
+            }
+        }
+        return;
 
-    double baseSpd = cruiseSpeed;
-    if (minD < slowDist) {
-        double t = (double)(minD - hardDist) / (double)(slowDist - hardDist);
-        if (t < 0.0) t = 0.0;
-        if (t > 1.0) t = 1.0;
-        baseSpd = slowSpeed + t * (cruiseSpeed - slowSpeed);
-    }
+        case 3: //rotate left
+        if(actualLeftEncoderValue-m_valueBuffer > 1000){
+            m_robot->forward();
+            m_makingAction = 0;
+        }
+        return;
 
-    if (strategy != AvoidStrategy::SMOOTH_ARC) {
-        m_robot->drive(baseSpd, baseSpd);
+        case 4: //rotate right
+        if(actualLeftEncoderValue-m_valueBuffer > 1000){
+            m_robot->forward();
+            m_makingAction = 0;
+        }
+        return;
+
+        case 5: //backward to left
+        if(actualRightEncoderValue-m_valueBuffer > 500){
+            m_robot->turnLeft();
+            if(actualRightEncoderValue-m_valueBuffer > 900){
+                m_makingAction = 0;
+            }
+        }
+        return;
+
+        case 6: //backward to right
+        if(actualLeftEncoderValue-m_valueBuffer > 500){
+            m_robot->turnRight();
+            if(actualLeftEncoderValue-m_valueBuffer > 900){
+                m_makingAction = 0;
+            }
+        }
         return;
     }
 
-    // SMOOTH_ARC: proportional deviation of the course along an arc away from approaching walls
-    double steer = 0.0; // > 0 turn right (slowdown right wheel), < 0 turn left
-    const double arcRange = (double)slowDist * 1.4;
+    //TODO: slow down on turning, specify basic speed - need to discuss about values
+    if(dBumper == BUMPER_NONE && dCenter > hardDist && !m_makingAction){
+        //NO OBSTACLE, NO MANOUVERS - CAN DRIVE
+        if(dRight > hardDist+10 && dLeft > hardDist+10){
+            //BOTH WALLS MISSING - TURNING LEFT BY DEFAULT
+        }else if(dRight > hardDist+10){
+            //RIGHT WALL MISSING - NEED TO STABILIZE PATH
+            //TURNING RIGHT FOR A LITTLE
+            m_valueBuffer = actualLeftEncoderValue;
+            m_robot->turnRight();
+            m_makingAction = 2;
+        }else if(dLeft > hardDist+10){
+            //LEFT WALL MISSING - NEED TO STABILIZE PATH
+            //TURNING LEFT FOR A LITTLE
+            m_valueBuffer = actualRightEncoderValue;
+            m_robot->turnLeft();
+            m_makingAction = 1;
+        }else if(dRight < hardDist){
+            //TOO CLOSE RIGHT WALL - NEED TO STABILIZE PATH
+            //TURNING LEFT FOR A LITTLE
+            m_valueBuffer = actualRightEncoderValue;
+            m_robot->turnLeft();
+            m_makingAction = 1;
+        }else if(dLeft < hardDist){
+            //TOO CLOSE LEFT WALL - NEED TO STABILIZE PATH
+            //TURNING RIGHT FOR A LITTLE
+            m_valueBuffer = actualLeftEncoderValue;
+            m_robot->turnRight();
+            m_makingAction = 2;
+        }else{
+            //NO PROBLEMS
+            m_robot->forward();
+            vTaskDelay(pdMS_TO_TICKS(10));
+        }
+    }else if((dBumper !=BUMPER_NONE || dCenter < hardDist+5) && !m_makingAction){
+        //THERE IS OBSTACLE
+        switch(dBumper){
+            case BUMPER_LEFT:
+            //OBSTACLE ON LEFT, NEED TO REVERSE, AND TURN RIGHT
+            m_valueBuffer = actualLeftEncoderValue;
+            m_robot->backward();
+            m_makingAction = 6;
+            return;
 
-    if (dL < arcRange) {
-        steer += (arcRange - dL) / arcRange;
-    }
-    if (dR < arcRange) {
-        steer -= (arcRange - dR) / arcRange;
-    }
-    // IF front sensor detects obstacle, turn lightly to free space
-    if (dC < slowDist) {
-        double frontPush = ((double)(slowDist - dC) / (double)slowDist) * 0.85;
-        steer += (dR >= dL) ? frontPush : -frontPush;
-    }
+            case BUMPER_RIGHT:
+            //OBSTACLE ON RIGHT, NEED TO REVERSE, AND TURN LEFT
+            m_valueBuffer = actualRightEncoderValue;
+            m_robot->backward();
+            m_makingAction = 5;
+            return;
+            
+            case BUMPER_BOTH:
+            //OBSTACLE IN FRONT, NEED TO REVERSE, AND TURN SOMEWHERE
+            m_valueBuffer = actualRightEncoderValue;
+            m_robot->backward();
+            m_makingAction = 5;
+            return;
 
-    if (steer > 1.0)  steer = 1.0;
-    if (steer < -1.0) steer = -1.0;
-
-    double leftSpd  = baseSpd;
-    double rightSpd = baseSpd;
-    if (steer > 0.0) {
-        rightSpd = baseSpd * (1.0 - 0.85 * steer);
-    } else if (steer < 0.0) {
-        leftSpd  = baseSpd * (1.0 - 0.85 * (-steer));
+        }
+        if(dRight > hardDist+10){
+            //RIGHT WALL MISSING - CAN TURN RIGHT
+            //ROTATE RIGHT
+            m_valueBuffer = actualLeftEncoderValue;
+            m_robot->rotateRight();
+            m_makingAction = 4;
+        }else if(dLeft > hardDist+10){
+            //LEFT WALL MISSING - CAN TURN LEFT
+            //ROTATE LEFT
+            m_valueBuffer = actualRightEncoderValue;
+            m_robot->rotateLeft();
+            m_makingAction = 3;
+        }
     }
-
-    m_robot->drive(leftSpd, rightSpd);
 }
 
 void RobotController::update() {
@@ -156,15 +240,15 @@ void RobotController::update() {
     // State machine for auto mode
     switch (m_state) {
         case RobotState::AUTO_DRIVE:
-            driveAutoSmooth();
-            break;
+            driveAuto();
+            return;
 
         case RobotState::BLOCKED_STOP:
             m_robot->stop();
             if (!m_collision->isHardCollision()) {
                 m_state = RobotState::AUTO_DRIVE;
             }
-            break;
+            return;
 
         case RobotState::AVOID_REVERSE:
             m_robot->drive(-reverseSpeed, -reverseSpeed);
@@ -172,7 +256,7 @@ void RobotController::update() {
                 m_state = RobotState::AVOID_TURN;
                 m_stateTimer_ms = now;
             }
-            break;
+            return;
 
         case RobotState::AVOID_TURN:
             if (m_turnRightNext) {
@@ -185,10 +269,10 @@ void RobotController::update() {
                 m_robot->stop();
                 m_state = RobotState::AUTO_DRIVE;
             }
-            break;
+            return;
 
         default:
             m_robot->stop();
-            break;
+            return;
     }
 }

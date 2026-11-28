@@ -23,6 +23,8 @@ public:
     // MOVEMENT:
     void rotateRight();
     void rotateLeft();
+    void turnRight();
+    void turnLeft();
     void forward();
     void backward();
     void drive(double leftSpeed, double rightSpeed); // [-1.0 .. 1.0], + = przód robota, - = tył robota
